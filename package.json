@@ -21,7 +21,8 @@
     "less": "*",
     "less-middleware": "*",
     "express-cdn": "0.1.9",
-    "path": "*"
+    "path": "*",
+    "gm" : "*"
   },
   "engines": {
     "node": "0.10.x"
