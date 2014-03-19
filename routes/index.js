@@ -83,6 +83,10 @@ fs.readFile(req.files.displayImage.path, function (err, data) {
       .resize(100, 100)
       .write(thumbPath, function(err) {
         var putting = client.putFile(thumbPath, '/tmp/100x100' + req.files.displayImage.originalFilename, function(err, s3res) {
+          console.log('err:');
+          console.log(err);
+          console.log('s3res');
+          console.log(s3res);
           s3res.resume();  
           res.redirect('/');
         });
