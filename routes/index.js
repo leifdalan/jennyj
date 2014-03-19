@@ -4,8 +4,12 @@ var express = require('express'),
   path = require('path'),
   __parentDir = path.dirname(process.mainModule.filename),
   gm = require('gm'),
-  imageMagick = gm.subClass({ imageMagick: true });
+  imageMagick = gm.subClass({ imageMagick: true }),
+  knox = require('knox'),
+  AWSKEY = process.env.AWSKEY || require('../local-config').AWSKEY,
+  AWSSECRET = process.env.AWSSECRET || require('../local-config').AWSSECRET;
 
+console.log(AWSKEY);
 exports.upload = function(req, res) {
 
   res.render('upload');
@@ -29,33 +33,35 @@ exports.upload = function(req, res) {
 
 exports.balls = function(req, res) {
   console.log('hi2');
+  // console.log(req);
+  // console.log(res);
   //console.log(req.files);
 //console.log(res);
-// fs.readFile(req.files.displayImage.path, function (err, data) {
-//   // ...
-//   var newPath = __parentDir + "/tmp/" + req.files.displayImage.originalFilename;
+fs.readFile(req.files.displayImage.path, function (err, data) {
+  // ...
+  var newPath = __parentDir + "/tmp/" + req.files.displayImage.originalFilename;
 
-//   fs.writeFile(newPath, data, function (err) {
-//     var thumbPath = __parentDir + '/tmp/100x100' + req.files.displayImage.originalFilename;
+  fs.writeFile(newPath, data, function (err) {
+    var thumbPath = __parentDir + '/tmp/100x100' + req.files.displayImage.originalFilename;
 
-//     imageMagick(newPath)
-//       .resize(100, 100)
-//       .write(thumbPath, function(err) {
-//         // var putting = client.putFile(thumbPath, '/tester.jpg', function(err, s3res) {
-//         //   console.log(err);
-//         //   console.log(s3res);
-//         //   s3res.resume();  
-//         //   res.redirect('upload')  ;
-//         // });
-//         upload = new MultiPartUpload({
-//           client: client,
-//           objectName : 'teZT.jpg',
-//           file : thumbPath
-//         }, function(err, body) {
+    imageMagick(newPath)
+      .resize(100, 100)
+      .write(thumbPath, function(err) {
+        // var putting = client.putFile(thumbPath, '/tester.jpg', function(err, s3res) {
+        //   console.log(err);
+        //   console.log(s3res);
+        //   s3res.resume();  
+        //   res.redirect('upload')  ;
+        // });
+        // upload = new MultiPartUpload({
+        //   client: client,
+        //   objectName : 'teZT.jpg',
+        //   file : thumbPath
+        // }, function(err, body) {
 
-//         });
-//       });
+        // });
+      });
     
-//   });
-// });
+  });
+});
 }

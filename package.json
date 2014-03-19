@@ -22,7 +22,8 @@
     "less-middleware": "*",
     "express-cdn": "0.1.9",
     "path": "*",
-    "gm" : "*"
+    "gm" : "*",
+    "knox" : "*"
   },
   "engines": {
     "node": "0.10.x"

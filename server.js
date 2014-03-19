@@ -13,11 +13,7 @@ var app = express();
 console.log(config);
 //app.use(logfmt.requestLogger());z
 
-app.get('/', function(req, res) {
-  res.render('index');
-});
 
-app.post('/balls', routes.balls);
 
 var port = Number(process.env.PORT || 5000);
 app.listen(port, function() {
@@ -33,3 +29,9 @@ app.use(express.methodOverride());
 app.use(express.bodyParser())
 app.use(app.router);
 app.use(express.static(__dirname + '/public'))
+
+app.get('/', function(req, res) {
+  res.render('index');
+});
+
+app.post('/balls', routes.balls);
