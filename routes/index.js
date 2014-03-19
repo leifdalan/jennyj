@@ -68,18 +68,21 @@ exports.balls = function(req, res) {
 //console.log(res);
 console.log(req);
 fs.readFile(req.files.displayImage.path, function (err, data) {
+  console.log('--------------------------req.files.displayImage');
+  console.log(req.files.displayImage);
   // ...
   var newPath = __parentDir + "/tmp/" + req.files.displayImage.originalFilename;
 
   fs.writeFile(newPath, data, function (err) {
+    console.log('--------------------------data');
+    console.log(data);
+
     var thumbPath = __parentDir + '/tmp/100x100' + req.files.displayImage.originalFilename;
 
     imageMagick(newPath)
       .resize(100, 100)
       .write(thumbPath, function(err) {
         var putting = client.putFile(thumbPath, '/tmp/100x100' + req.files.displayImage.originalFilename, function(err, s3res) {
-          console.log(err);
-          console.log(s3res);
           s3res.resume();  
           res.redirect('/');
         });
