@@ -9,13 +9,12 @@ var express = require('express'),
   AWSKEY = process.env.AWSKEY || require('../local-config').AWSKEY,
   AWSSECRET = process.env.AWSSECRET || require('../local-config').AWSSECRET;
 
-console.log(AWSKEY);
 exports.upload = function(req, res) {
 
   res.render('upload');
   var object = { foo: "bar" };
   var string = JSON.stringify(object);
-  var s3req = client.put('/test/obj.json', {
+  var s3req = client.put('jennytest/test.json', {
       'Content-Length': string.length
     , 'Content-Type': 'application/json'
   });
@@ -30,6 +29,36 @@ exports.upload = function(req, res) {
 }
 
 
+var client = knox.createClient({
+  key : AWSKEY,
+  secret : AWSSECRET,
+  bucket : 'jennyjtest'
+
+});
+
+
+
+
+
+
+
+var object = { foo: "bar" };
+var string = JSON.stringify(object);
+var req = client.put('/test/obj.json', {
+    'Content-Length': string.length
+  , 'Content-Type': 'application/json'
+});
+req.on('response', function(res){
+  console.log(res);
+  console.log('hello?');
+  console.log(res.statusCode);
+  if (200 == res.statusCode) {
+    console.log('saved to %s', req.url);
+  }
+});
+req.end(string);
+
+
 
 exports.balls = function(req, res) {
   console.log('hi2');
@@ -37,6 +66,7 @@ exports.balls = function(req, res) {
   // console.log(res);
   //console.log(req.files);
 //console.log(res);
+console.log(req);
 fs.readFile(req.files.displayImage.path, function (err, data) {
   // ...
   var newPath = __parentDir + "/tmp/" + req.files.displayImage.originalFilename;
@@ -47,12 +77,12 @@ fs.readFile(req.files.displayImage.path, function (err, data) {
     imageMagick(newPath)
       .resize(100, 100)
       .write(thumbPath, function(err) {
-        // var putting = client.putFile(thumbPath, '/tester.jpg', function(err, s3res) {
-        //   console.log(err);
-        //   console.log(s3res);
-        //   s3res.resume();  
-        //   res.redirect('upload')  ;
-        // });
+        var putting = client.putFile(thumbPath, '/tmp/100x100' + req.files.displayImage.originalFilename, function(err, s3res) {
+          console.log(err);
+          console.log(s3res);
+          s3res.resume();  
+          res.redirect('/');
+        });
         // upload = new MultiPartUpload({
         //   client: client,
         //   objectName : 'teZT.jpg',

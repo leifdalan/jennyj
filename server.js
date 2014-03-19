@@ -28,6 +28,7 @@ app.use(express.methodOverride());
 //bodyParser must be before router.... thanks docs.
 app.use(express.bodyParser())
 app.use(app.router);
+//app.use(form({ keepExtensions: true }));
 app.use(express.static(__dirname + '/public'))
 
 app.get('/', function(req, res) {
