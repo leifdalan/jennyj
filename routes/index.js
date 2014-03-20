@@ -25,6 +25,8 @@ console.log(db);
 
 exports.balls = function(req, res) {
   var sizes = [
+      2000,
+      1000,
       500,
       320,
       100
