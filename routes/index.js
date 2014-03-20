@@ -6,99 +6,100 @@ var express = require('express'),
   gm = require('gm'),
   imageMagick = gm.subClass({ imageMagick: true }),
   knox = require('knox'),
+  Q = require('q'),
+  crypto = require('crypto'),
+  monk = require('monk'),
   AWSKEY = process.env.AWSKEY || require('../local-config').AWSKEY,
-  AWSSECRET = process.env.AWSSECRET || require('../local-config').AWSSECRET;
-
-exports.upload = function(req, res) {
-
-  res.render('upload');
-  var object = { foo: "bar" };
-  var string = JSON.stringify(object);
-  var s3req = client.put('jennytest/test.json', {
-      'Content-Length': string.length
-    , 'Content-Type': 'application/json'
-  });
-  s3req.on('response', function(res){
-    if (200 == res.statusCode) {
-      console.log('saved to %s', s3req.url);
-    }
-  });
-  
-  s3req.end(string);
-  console.log(s3req);
-}
-
-
-var client = knox.createClient({
-  key : AWSKEY,
-  secret : AWSSECRET,
-  bucket : 'jennyjtest'
-
-});
-
-
-
-
-
-
-
-var object = { foo: "bar" };
-var string = JSON.stringify(object);
-var req = client.put('/test/obj.json', {
-    'Content-Length': string.length
-  , 'Content-Type': 'application/json'
-});
-req.on('response', function(res){
-  console.log(res);
-  console.log('hello?');
-  console.log(res.statusCode);
-  if (200 == res.statusCode) {
-    console.log('saved to %s', req.url);
-  }
-});
-req.end(string);
+  AWSSECRET = process.env.AWSSECRET || require('../local-config').AWSSECRET,
+  BUCKET = process.env.BUCKET || require('../local-config').BUCKET,
+  BUCKET_URL = process.env.BUCKET_URL || require('../local-config').BUCKET_URL,
+  mongoURI = process.env.MONGOLAB_URI ||
+    process.env.MONGOHQ_URL ||
+    'localhost:27017/flagdaytest',
+  db = monk(mongoURI),
+  db_images = db.get('images');
 
 
 
 exports.balls = function(req, res) {
-  console.log('hi2');
-  // console.log(req);
-  // console.log(res);
-  //console.log(req.files);
-//console.log(res);
-console.log(req);
-fs.readFile(req.files.displayImage.path, function (err, data) {
-  console.log('--------------------------req.files.displayImage');
-  console.log(req.files.displayImage);
-  // ...
-  var newPath = __parentDir + "/tmp/" + req.files.displayImage.originalFilename;
+  var sizes = [
+      500,
+      320,
+      100
+    ],
+    deferredArray = [],
+    record = {};
 
-  fs.writeFile(newPath, data, function (err) {
-    console.log('--------------------------data');
-    console.log(data);
+  if (req.files.displayImage.length) {
+    for (var i = 0; i < req.files.displayImage.length; i++) {
+      handleUpload(req.files.displayImage[i]);
+    };
+  } else {
+    handleUpload(req.files.displayImage)  
+  }
+  
 
-    var thumbPath = __parentDir + '/tmp/100x100' + req.files.displayImage.originalFilename;
+  function handleUpload(file) {
+    fs.readFile(file.path, function (err, data) {
+      var newPath = __parentDir + "/tmp/" + file.originalFilename;
+      function resizeAndPush(args) {
 
-    imageMagick(newPath)
-      .resize(100, 100)
-      .write(thumbPath, function(err) {
-        var putting = client.putFile(thumbPath, '/tmp/100x100' + req.files.displayImage.originalFilename, function(err, s3res) {
-          console.log('err:');
-          console.log(err);
-          console.log('s3res');
-          console.log(s3res);
-          s3res.resume();  
-          res.redirect('/');
+        var thumbPath = __parentDir + '/tmp/' + args.id + '_' + args.thumbSize + '_' + file.originalFilename;
+        imageMagick(newPath)
+          .resize(args.thumbSize)
+          .write(thumbPath, function(err) {
+            
+            var amazonPath = '/tmp/' + args.id + '_' + args.thumbSize + '_' + file.originalFilename
+            console.log(amazonPath);
+            var client = knox.createClient({
+              key : AWSKEY,
+              secret : AWSSECRET,
+              bucket : BUCKET
+
+            });
+            var putting = client.putFile(thumbPath, amazonPath, function(err, s3res) {
+              console.log('err:');
+              console.log(err);
+              if (!s3res) return args.deferred.reject(err);
+              else s3res.resume(); 
+              record[args.id]['s_' + args.thumbSize] = amazonPath;
+              args.deferred.resolve(record);
+              console.log(record);
+            });
+
+            putting.on('progress', function(written) {
+              console.log(written);
+              
+            })
+            putting.on('error', function(error) {
+              console.log(error);
+
+            })
+        });//imageMagick
+      }
+
+      fs.writeFile(newPath, data, function (err) {
+
+        var id = crypto.randomBytes(4).toString('hex'); 
+        record[id] = {};
+        for (var i = 0; i < sizes.length; i++) {
+          var deferred = Q.defer();
+          var args = {
+            id : id,
+            deferred : deferred,
+            thumbSize : sizes[i]
+          }
+          
+          resizeAndPush(args);
+
+          deferredArray.push(args.deferred.promise);
+        };//for sizes
+        Q.allSettled(deferredArray).then(function(responseArray) {
+          console.log(responseArray);
+          res.end();
         });
-        // upload = new MultiPartUpload({
-        //   client: client,
-        //   objectName : 'teZT.jpg',
-        //   file : thumbPath
-        // }, function(err, body) {
+      });//writeFile
+    });//readFile
+  }//handleUpoad
 
-        // });
-      });
-    
-  });
-});
-}
+}//balls

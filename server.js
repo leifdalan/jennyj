@@ -6,7 +6,7 @@ var express = require('express'),
   path = require('path'),
   config = require('./config')[env],
   mongo = require('mongodb'),
-  http = require('http');
+  http = require('http'),
   routes = require('./routes');
 
 var app = express();
