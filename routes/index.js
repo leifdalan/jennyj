@@ -12,7 +12,6 @@ var express = require('express'),
   AWSKEY = process.env.AWSKEY || require('../local-config').AWSKEY,
   AWSSECRET = process.env.AWSSECRET || require('../local-config').AWSSECRET,
   BUCKET = process.env.BUCKET || require('../local-config').BUCKET,
-  BUCKET_URL = process.env.BUCKET_URL || require('../local-config').BUCKET_URL,
   mongoURI = process.env.MONGOLAB_URI ||
     process.env.MONGOHQ_URL ||
     'localhost:27017/jennyjtest';
