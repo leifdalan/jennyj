@@ -15,9 +15,12 @@ var express = require('express'),
   BUCKET_URL = process.env.BUCKET_URL || require('../local-config').BUCKET_URL,
   mongoURI = process.env.MONGOLAB_URI ||
     process.env.MONGOHQ_URL ||
-    'localhost:27017/flagdaytest',
-  db = monk(mongoURI),
+    'localhost:27017/jennyjtest';
+console.log(mongoURI);
+var db = monk(mongoURI);
   db_images = db.get('images');
+
+console.log(db);
 
 
 
@@ -97,6 +100,7 @@ exports.balls = function(req, res) {
         Q.allSettled(deferredArray).then(function(responseArray) {
           console.log(responseArray);
           res.end();
+          db_images.insert(record);
         });
       });//writeFile
     });//readFile
