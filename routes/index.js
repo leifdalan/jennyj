@@ -83,9 +83,9 @@ exports.balls = function(req, res) {
     fs.readFile(file.path, function (err, data) {
       var newPath = __parentDir + "/tmp/" + file.originalFilename;
      
-
+      console.time('writing...');
       fs.writeFile(newPath, data, function (err) {
-
+        console.timeEnd('writing...');
         var id = crypto.randomBytes(4).toString('hex'); 
         record[id] = {};
 
@@ -110,27 +110,28 @@ exports.balls = function(req, res) {
 function resizeAndPush(args) {
     console.log(args.sizes);
     var resizeDeferredArray = [];
-
-    cloudinary.uploader.upload(
+    console.time('cloudinary api call');
+    var upToCloud = cloudinary.uploader.upload(
       args.file.path,
       function(result) { 
-        console.log('result------------------');
-        console.log(result);
-
+        // console.log('result------------------');
+        // console.log(result);
+        console.timeEnd('cloudinary api call');
         for (var i = 0; i < result.eager.length; i++) {
           var resizeDeferred = Q.defer();
           resizeDeferredArray.push(resizeDeferred.promise);
           result.eager[i]
           var tmpfile = fs.createWriteStream(__parentDir + '/tmp/' + result.eager[i].width + args.file.originalFilename);
-          console.log('writing');
-          console.log(tmpfile);
+          // console.log('writing');
+          // console.log(tmpfile);
           getFileFromCloudinAry({
             url : result.eager[i].url,
             tmpfile : tmpfile,
             resizeDeferred : resizeDeferred,
             id : args.id,
             size : '' + result.eager[i].width + 'x' + result.eager[i].height,
-            name : args.file.originalFilename
+            name : args.file.originalFilename,
+            number : i
           })
           Q.allSettled(resizeDeferredArray).then(function(responseArray) {
             //console.log(responseArray);
@@ -149,23 +150,29 @@ function resizeAndPush(args) {
         eager: args.sizes,                                     
         tags: ['special', 'for_homepage']
       }      
-    )
+    );
+    upToCloud.on('progress', function(data) {
+      console.log(data);
+    })
   
 }
 
 function getFileFromCloudinAry(args) {
+  console.time(args.number + 'http get from cloudinary');
   var request = http.get(args.url, function(response) {
     response.pipe(args.tmpfile);
     args.tmpfile.on('finish', function() {
+      console.timeEnd(args.number + 'http get from cloudinary');
       args.tmpfile.close();
-      console.log(args.tmpfile);
+      //console.log(args.tmpfile);
       var amazonPath = '/tmp/' + args.id + '_' + args.size + '_' + args.name
       pushToS3({
         tmpfile : args.tmpfile,
         amazonPath : amazonPath,
         resizeDeferred : args.resizeDeferred,
         id : args.id,
-        size : args.size
+        size : args.size,
+        number : args.number
       });              
     })
   });
@@ -178,12 +185,14 @@ function pushToS3(args) {
     bucket : BUCKET
 
   });
+  console.time(args.number + 'pushing to S3');
   var putting = client.putFile(
     args.tmpfile.path, 
     args.amazonPath, 
     function(err, s3res) {
-      console.log('err:');
-      console.log(err);
+      console.timeEnd(args.number + 'pushing to S3');
+      // console.log('err:');
+      // console.log(err);
       if (!s3res) return args.resizeDeferred.reject(err);
       else s3res.resume(); 
       record[args.id]['s_' + args.size] = args.amazonPath;
