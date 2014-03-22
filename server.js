@@ -37,7 +37,7 @@ app.use(app.router);
 app.use(express.static(__dirname + '/public'))
 
 app.get('/', function(req, res) {
-  db_images.find({}, {}, function(e, docs) {
+  db_images.find({}, {sort: {'_id' : -1}}, function(e, docs) {
     console.log(e);
     console.log(docs);
     res.render('index', {
