@@ -151,9 +151,6 @@ function resizeAndPush(args) {
         tags: ['special', 'for_homepage']
       }      
     );
-    upToCloud.on('progress', function(data) {
-      console.log(data);
-    })
   
 }
 
