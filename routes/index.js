@@ -18,6 +18,7 @@ var express = require('express'),
     'localhost:27017/jennyjtest',
   cloudinary = require('cloudinary'),
   S3PATH = 'https://jennyjtest.s3.amazonaws.com';
+  CLOUDFRONT_PATH = 'd3dd7n94czsagf.cloudfront.net';
 
 var db = monk(mongoURI);
   db_images = db.get('images');
@@ -197,7 +198,7 @@ function pushToS3(args) {
       // console.log(err);
       if (!s3res) return args.resizeDeferred.reject(err);
       else s3res.resume(); 
-      args.recordObject['s_' + args.size] = S3PATH + args.amazonPath;
+      args.recordObject['s_' + args.size] = CLOUDFRONT_PATH + args.amazonPath;
       args.resizeDeferred.resolve(args.recordObject);
       console.log(args.recordObject);
   });
