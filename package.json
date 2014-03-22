@@ -26,7 +26,8 @@
     "gm" : "*",
     "knox" : "*",
     "q" : "*",
-    "crypto" : "*"
+    "crypto" : "*",
+    "cloudinary" : "*"
   },
   "engines": {
     "node": "0.10.x"
