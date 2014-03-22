@@ -2,3 +2,10 @@ h1 Hello there.
 form(action="/balls", method="post", enctype="multipart/form-data")
   input(type="file", multiple name="displayImage")
   button(type="submit")
+
+ul
+  for image in images
+    li(id=image.id) 
+      img(src=image.s_100x100)
+      img(src=image.s_500)
+      img(src=image.s_1000)

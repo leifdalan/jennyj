@@ -7,12 +7,17 @@ var express = require('express'),
   config = require('./config')[env],
   mongo = require('mongodb'),
   http = require('http'),
-  routes = require('./routes');
+  monk = require('monk'),
+  mongoURI = process.env.MONGOLAB_URI ||
+    process.env.MONGOHQ_URL ||
+    'localhost:27017/jennyjtest',
+  routes = require('./routes'),
+  S3PATH = 'https://jennytest.s3.amazonaws.com'
 
 var app = express();
-console.log(config);
 //app.use(logfmt.requestLogger());z
-
+var db = monk(mongoURI);
+  db_images = db.get('images');
 
 
 var port = Number(process.env.PORT || 5000);
@@ -32,7 +37,15 @@ app.use(app.router);
 app.use(express.static(__dirname + '/public'))
 
 app.get('/', function(req, res) {
-  res.render('index');
+  db_images.find({}, {}, function(e, docs) {
+    console.log(e);
+    console.log(docs);
+    res.render('index', {
+      images : docs
+    });    
+  })
+
+
 });
 
 app.post('/balls', routes.balls);

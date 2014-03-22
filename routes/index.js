@@ -16,20 +16,19 @@ var express = require('express'),
   mongoURI = process.env.MONGOLAB_URI ||
     process.env.MONGOHQ_URL ||
     'localhost:27017/jennyjtest',
-  cloudinary = require('cloudinary')
-console.log(mongoURI);
+  cloudinary = require('cloudinary'),
+  S3PATH = 'https://jennyjtest.s3.amazonaws.com';
+
 var db = monk(mongoURI);
   db_images = db.get('images');
 
-console.log(db);
-console.log(keys);
 cloudinary.config({ 
   cloud_name: keys.CLOUD_NAME, 
   api_key: keys.CLOUD_API_KEY, 
   api_secret: keys.CLOUD_SECRET 
 });
 
-var record = {};
+var record = [];
 
 var sizes = [
   {
@@ -40,14 +39,7 @@ var sizes = [
   {
     width: 1000,
     crop : 'fill',
-    gravity : 'face',
-    format : 'webp' 
-  },
-  {
-    width: 1000,
-    crop : 'fill',
-    gravity : 'face',
-    format : 'webp' 
+    gravity : 'face'
   },
   {
     width: 100,
@@ -74,6 +66,9 @@ exports.balls = function(req, res) {
     handleUpload(req.files.displayImage).then(function(response) {
       console.log(response);
       console.log('DONEEEEEE!!!!!!!!');
+      db_images.insert(response[0].value);
+      res.redirect('/')
+      res.end();
     })
   }
   
@@ -87,7 +82,6 @@ exports.balls = function(req, res) {
       fs.writeFile(newPath, data, function (err) {
         console.timeEnd('writing...');
         var id = crypto.randomBytes(4).toString('hex'); 
-        record[id] = {};
 
           
           var args = {
@@ -111,27 +105,36 @@ function resizeAndPush(args) {
     console.log(args.sizes);
     var resizeDeferredArray = [];
     console.time('cloudinary api call');
+    var recordObject = {
+      id : args.id
+    };
+
     var upToCloud = cloudinary.uploader.upload(
       args.file.path,
       function(result) { 
-        // console.log('result------------------');
-        // console.log(result);
+        console.log('result------------------');
+        console.log(result);
         console.timeEnd('cloudinary api call');
         for (var i = 0; i < result.eager.length; i++) {
+
           var resizeDeferred = Q.defer();
           resizeDeferredArray.push(resizeDeferred.promise);
           result.eager[i]
           var tmpfile = fs.createWriteStream(__parentDir + '/tmp/' + result.eager[i].width + args.file.originalFilename);
           // console.log('writing');
           // console.log(tmpfile);
+          var sizeString = '';
+          if (args.sizes[i].width && args.sizes[i].height) sizeString = '' + args.sizes[i].width + 'x' + args.sizes[i].height;
+          else sizeString = args.sizes[i].width ? args.sizes[i].width : args.sizes[i].height;
           getFileFromCloudinAry({
             url : result.eager[i].url,
             tmpfile : tmpfile,
             resizeDeferred : resizeDeferred,
             id : args.id,
-            size : '' + result.eager[i].width + 'x' + result.eager[i].height,
+            size : sizeString,
             name : args.file.originalFilename,
-            number : i
+            number : i,
+            recordObject : recordObject
           })
           Q.allSettled(resizeDeferredArray).then(function(responseArray) {
             //console.log(responseArray);
@@ -169,7 +172,8 @@ function getFileFromCloudinAry(args) {
         resizeDeferred : args.resizeDeferred,
         id : args.id,
         size : args.size,
-        number : args.number
+        number : args.number,
+        recordObject : args.recordObject
       });              
     })
   });
@@ -185,16 +189,17 @@ function pushToS3(args) {
   console.time(args.number + 'pushing to S3');
   var putting = client.putFile(
     args.tmpfile.path, 
-    args.amazonPath, 
+    args.amazonPath,
+    { 'x-amz-acl': 'public-read' }, 
     function(err, s3res) {
       console.timeEnd(args.number + 'pushing to S3');
       // console.log('err:');
       // console.log(err);
       if (!s3res) return args.resizeDeferred.reject(err);
       else s3res.resume(); 
-      record[args.id]['s_' + args.size] = args.amazonPath;
-      args.resizeDeferred.resolve(record);
-      console.log(record);
+      args.recordObject['s_' + args.size] = S3PATH + args.amazonPath;
+      args.resizeDeferred.resolve(args.recordObject);
+      console.log(args.recordObject);
   });
 
   putting.on('progress', function(written) {
